@@ -1,0 +1,411 @@
+basePath: /api/v1
+definitions:
+  entity.CheckLocationRequest:
+    properties:
+      user_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      user_location:
+        $ref: '#/definitions/entity.UserLocation'
+    required:
+    - user_id
+    - user_location
+    type: object
+  entity.CheckLocationResponse:
+    properties:
+      incidents:
+        items:
+          $ref: '#/definitions/entity.LocationCheckIncident'
+        type: array
+      is_danger:
+        example: true
+        type: boolean
+    type: object
+  entity.CreateIncidentRequest:
+    properties:
+      area:
+        $ref: '#/definitions/entity.GeoJsonPolygon'
+      description:
+        example: Description 1
+        maxLength: 1000
+        type: string
+      name:
+        example: Incident 1
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - area
+    - name
+    type: object
+  entity.ErrorResponse:
+    properties:
+      details:
+        example: email is required
+        type: string
+      error:
+        example: invalid input
+        type: string
+    type: object
+  entity.GeoJsonPolygon:
+    properties:
+      coordinates:
+        items:
+          items:
+            items:
+              format: float64
+              type: number
+            type: array
+          type: array
+        type: array
+      type:
+        example: Polygon
+        type: string
+    type: object
+  entity.GetIncidentResponse:
+    properties:
+      area:
+        $ref: '#/definitions/entity.GeoJsonPolygon'
+      created_at:
+        example: "2022-01-01T00:00:00Z"
+        type: string
+      description:
+        example: Description 1
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      name:
+        example: Incident 1
+        type: string
+      updated_at:
+        example: "2022-01-01T00:00:00Z"
+        type: string
+    type: object
+  entity.GetIncidentsResponse:
+    properties:
+      incidents:
+        items:
+          $ref: '#/definitions/entity.GetIncidentResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  entity.HealthResponse:
+    properties:
+      components:
+        additionalProperties:
+          type: string
+        type: object
+      status:
+        type: string
+      timestamp:
+        type: string
+      uptime:
+        type: string
+    type: object
+  entity.IncidentResponse:
+    properties:
+      error:
+        example: 'invalid input error: invalid area'
+        type: string
+      status:
+        example: successfully created
+        type: string
+    type: object
+  entity.IncidentStats:
+    properties:
+      incident_id:
+        type: string
+      name:
+        type: string
+      user_count:
+        type: integer
+    type: object
+  entity.LocationCheckIncident:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  entity.StatsResponse:
+    properties:
+      stats:
+        items:
+          $ref: '#/definitions/entity.IncidentStats'
+        type: array
+      window_minutes:
+        type: integer
+    type: object
+  entity.UpdateIncidentRequest:
+    properties:
+      area:
+        $ref: '#/definitions/entity.GeoJsonPolygon'
+      description:
+        example: Description 1
+        maxLength: 1000
+        type: string
+      name:
+        example: Incident 1
+        maxLength: 255
+        minLength: 1
+        type: string
+    type: object
+  entity.UserLocation:
+    properties:
+      lat:
+        type: number
+      lon:
+        type: number
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  title: Geo Incedent Service API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Метод для проверки здоровья сервиса
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.HealthResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      summary: Проверяет здоровье сервиса
+      tags:
+      - health
+  /incidents:
+    get:
+      description: Метод для получения пагенированного списка инцидентов. Поддерживает
+        параметры limit и offset.
+      parameters:
+      - description: Количество записей
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение (для пагинации)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.GetIncidentsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Получает список активных инцидентов
+      tags:
+      - incidents
+    post:
+      consumes:
+      - application/json
+      description: Метод для создания инцидента. Создает инцидент с названием, описанием
+        и гео-зоной (Polygon). Зона определяет опасную область для проверок локаций.
+      parameters:
+      - description: Incident data
+        in: body
+        name: incident
+        required: true
+        schema:
+          $ref: '#/definitions/entity.CreateIncidentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: successfully created
+          schema:
+            $ref: '#/definitions/entity.IncidentResponse'
+        "400":
+          description: Invalid request body (name, area required)
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+        "500":
+          description: Failed to create incident
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Создает новый инцидент
+      tags:
+      - incidents
+  /incidents/{id}:
+    delete:
+      description: Удаляет инцидент
+      parameters:
+      - description: Incident ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: successfully deleted
+          schema:
+            $ref: '#/definitions/entity.IncidentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Удаляет инцидент
+      tags:
+      - incidents
+    get:
+      description: Метод для получения инцидента по уникальному идентификатору (UUID).
+        ID передается в URL как параметр пути.
+      parameters:
+      - description: Incident ID
+        example: 550e8400-e29b-41d4-a716-426614174000
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.GetIncidentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Получает инцидент по ID
+      tags:
+      - incidents
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет инцидент
+      parameters:
+      - description: Incident ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Incident
+        in: body
+        name: incident
+        required: true
+        schema:
+          $ref: '#/definitions/entity.UpdateIncidentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.IncidentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Обновляет инцидент
+      tags:
+      - incidents
+  /incidents/stats:
+    get:
+      description: Получает статистику инцидентов
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.StatsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      summary: Получает статистику инцидентов
+      tags:
+      - incidents
+  /location:
+    post:
+      consumes:
+      - application/json
+      description: Проверяет локацию
+      parameters:
+      - description: User data
+        in: body
+        name: location
+        required: true
+        schema:
+          $ref: '#/definitions/entity.CheckLocationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.CheckLocationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      summary: Проверяет локацию
+      tags:
+      - location
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: X-API-Key
+    type: apiKey
+swagger: "2.0"

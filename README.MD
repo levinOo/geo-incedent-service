@@ -1,21 +1,89 @@
-# geo-incident-service
+# Geo Incident Service
 
-Сервис (WIP) для проверки координат пользователя относительно опасных зон (инцидентов) и асинхронной отправки вебхуков на внешний портал. [conversation_history:1]
+Сервис для управления географическими инцидентами (Geo Incidents) и проверки местоположения пользователей. Позволяет создавать опасные зоны и уведомлять внешние системы (через вебхуки), если пользователь входит в такую зону.
 
-## Возможности (план)
-- CRUD для инцидентов (роль оператора, API-key). [conversation_history:1]
-- Проверка координат: вернуть ближайшие/пересекающиеся опасные зоны + логирование проверки. [conversation_history:1]
-- Асинхронная отправка вебхуков через очередь (Redis) + retry при ошибках доставки. [conversation_history:1]
-- Статистика: уникальные `user_id` за последние N минут. [conversation_history:1]
-- Health-check для мониторинга. [conversation_history:1]
+## Функциональность
 
-## Стек
-- Go 1.24+ (Clean Architecture: Handler → Service/Usecase → Repository). [conversation_history:1]
-- PostgreSQL 15 (геоданные через PostGIS — решение для удобной гео-логики). [conversation_history:1]
-- Redis (очередь вебхуков + кэш/статистика). [conversation_history:1]
-- Docker / docker-compose. [conversation_history:1]
+- **Управление инцидентами (CRUD)**: Создание, чтение, обновление, удаление инцидентов с географической зоной (GeoJSON Polygon).
+- **Проверка локации**: Определение попадания пользователя в зону активного инцидента (Point in Polygon).
+- **Кэширование**: Активные инциденты кэшируются в Redis для ускорения проверки.
+- **Вебхуки**: Асинхронная отправка уведомлений о входе в опасную зону.
+    - Система повторных попыток (Exponential Backoff).
+    - Dead Letter Queue (DLQ) для недоставленных сообщений.
+- **Статистика**: Подсчет уникальных пользователей, затронутых инцидентами.
+- **Локализация**: Все API ошибки и логи приложения на русском языке.
 
-## Быстрый старт (когда будет готово)
+## Технологический стек
+
+- **Язык**: Go (Golang) 1.25
+- **Web Framework**: Gin
+- **База данных**: PostgreSQL + PostGIS
+- **Кэш / Очереди**: Redis
+- **Документация**: Swagger (Swaggo)
+- **Контейнеризация**: Docker, Docker Compose
+
+## Установка и Запуск
+
+### Предварительные требования
+- Docker и Docker Compose
+
+### Запуск приложения
+
+1. **Клонируйте репозиторий:**
+   ```bash
+   git clone <repository-url>
+   cd geo-incedent-service
+   ```
+
+2. **Запустите сервисы:**
+   Приложение, база данных и Redis настроены в `docker-compose.yml`.
+   ```bash
+   docker-compose up -d --build
+   ```
+
+3. **Проверка работы:**
+   - Основной API: `http://localhost:8080/api/v1`
+   - Webhook Stub (тестовый сервер для приема хуков): `http://localhost:9090`
+   - Healthcheck: `http://localhost:8080/health`
+
+## API Документация
+
+После запуска приложения, интерактивная документация Swagger доступна по адресу:
+- `http://localhost:8080/swagger/index.html`
+
+## Тестирование
+
+### Модульные тесты (Unit Tests)
+Запуск unit-тестов для бизнес-логики:
 ```bash
-cp .env.example .env
-docker compose up --build
+go test -v ./internal/service/...
+```
+
+### Интеграционные тесты (E2E)
+Интеграционные тесты требуют подключения к реальной БД и Redis. По умолчанию тесты настроены на порты Docker Compose (`localhost:5434` для Postgres, `localhost:6379` для Redis).
+
+1. Убедитесь, что контейнеры запущены (`docker-compose up -d`).
+2. Запустите тесты:
+```bash
+go test -v ./tests/...
+```
+
+## Конфигурация
+
+Конфигурация осуществляется через файл `.env` или переменные окружения. Основные параметры:
+
+- `HTTP_SERVER_PORT`: Порт API сервера (по умолчанию `:8080`).
+- `DATABASE_URL`: Строка подключения к PostgreSQL.
+- `REDIS_ADDR`: Адрес Redis.
+- `WEBHOOK_URL`: Адрес для отправки вебхуков (по умолчанию `http://webhook-stub:9090/webhook`).
+- `API_KEY`: Ключ для аутентификации запросов.
+
+## Структура проекта
+
+Проект следует принципам Clean Architecture (Clean Arch):
+- `cmd/`: Точки входа (API сервер, Webhook Stub).
+- `internal/entity/`: Доменные сущности.
+- `internal/repo/`: Слой работы с данными (Postgres).
+- `internal/service/`: Бизнес-логика.
+- `internal/delivery/http/`: HTTP обработчики (Gin).
+- `internal/worker/`: Фоновые задачи (обработка очереди вебхуков).

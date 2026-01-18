@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: DockerFile
+    container_name: geo-app
+    ports:
+      - "${HTTP_SERVER_PORT}:${HTTP_SERVER_PORT}"
+    environment:
+      - HTTP_SERVER_PORT=${HTTP_SERVER_PORT}
+      - DATABASE_URL=${DATABASE_URL}
+      - API_KEY=${API_KEY}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - REDIS_ADDR=${REDIS_ADDR}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - geo-network
+
+  db:
+    image: postgis/postgis:15-3.4-alpine
+    container_name: geo-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: geo_incidents
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d geo_incidents"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - geo-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: geo-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - geo-network
+volumes:
+  postgres_data:
+  redis_data:
+networks:
+  geo-network:
+    driver: bridge
