@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	cacheKey = "incidents:active"
+	cacheKey       = "incidents:active"
+	contextTimeout = 2 * time.Second
 )
 
 type LocationService interface {
@@ -109,11 +110,12 @@ func (s *LocationServiceImpl) CheckLocation(ctx context.Context, req *entity.Che
 			CreatedAt:  time.Now(),
 		}
 
-		go func() {
-			if err := s.queue.Enqueue(context.Background(), task); err != nil {
-				slog.Error("ошибка добавления вебхука в очередь", "error", err)
-			}
-		}()
+		enqueueCtx, cancel := context.WithTimeout(ctx, contextTimeout)
+		defer cancel()
+
+		if err := s.queue.Enqueue(enqueueCtx, task); err != nil {
+			slog.Error("ошибка добавления вебхука в очередь", "error", err)
+		}
 	}
 
 	return &entity.CheckLocationResponse{

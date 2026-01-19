@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -55,6 +56,10 @@ func (s *WebhookSender) Send(ctx context.Context, task *entity.WebhookTask, webh
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("вебхук вернул неверный статус: %d %s", resp.StatusCode, resp.Status)
+	}
 
 	return nil
 }

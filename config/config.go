@@ -64,23 +64,27 @@ type RetryClient struct {
 func Load() (*Config, error) {
 	viper.AutomaticEnv()
 
-	viper.SetConfigName(".env")
 	viper.SetConfigType("env")
 	viper.AddConfigPath("./config")
+	viper.AddConfigPath(".")
 
+	viper.SetConfigName(".env")
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			slog.Warn("конфиг файл не найден, использую только переменные окружения")
+			slog.Info("файл .env не найден")
+
+			viper.AddConfigPath("./config")
+			viper.SetConfigName(".env-example")
+			if err := viper.ReadInConfig(); err != nil {
+				if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+					slog.Warn("файл не был найден", "error", err)
+				} else {
+					return nil, fmt.Errorf("не удалось прочитать .env-example: %w", err)
+				}
+			}
+			slog.Info("файл .env-example загружен")
 		} else {
-			return nil, fmt.Errorf("failed to read config: %w", err)
-		}
-	}
-
-	required := []string{"DATABASE_URL", "API_KEY", "WEBHOOK_URL"}
-
-	for _, key := range required {
-		if viper.GetString(key) == "" {
-			return nil, fmt.Errorf("неустановлено обязательное окружение %s", key)
+			return nil, fmt.Errorf("не удалось прочитать .env: %w", err)
 		}
 	}
 
@@ -131,7 +135,7 @@ func Load() (*Config, error) {
 func mustLoad(name string) string {
 	value := viper.GetString(name)
 	if value == "" {
-		slog.Error("неустановлено обязательное окружение", "error", fmt.Errorf("неустановлено обязательное окружение %s", name))
+		slog.Error("не найден env", "error", fmt.Errorf("не найден env: %s", name))
 		os.Exit(1)
 	}
 	return value

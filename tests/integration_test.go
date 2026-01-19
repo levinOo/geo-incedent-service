@@ -25,12 +25,11 @@ import (
 )
 
 func TestIntegration_FullFlow(t *testing.T) {
-	// Root Logger for Debugging
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	slog.SetDefault(logger)
 
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("Пропуск интеграционного теста в коротком режиме")
 	}
 
 	cfg := &config.Config{
@@ -54,17 +53,16 @@ func TestIntegration_FullFlow(t *testing.T) {
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, cfg.Postgres.PostgresURL)
 	if err != nil {
-		t.Skipf("Postgres connection failed: %v", err)
+		t.Skipf("Не удалось подключиться к Postgres: %v", err)
 	}
 	defer pool.Close()
 
 	redisClient, err := db.NewRedis(&cfg.Redis)
 	if err != nil {
-		t.Skipf("Redis connection failed: %v", err)
+		t.Skipf("Не удалось подключиться к Redis: %v", err)
 	}
 	defer redisClient.Close()
 
-	// Clean up state
 	pool.Exec(ctx, "TRUNCATE incidents, location_checks CASCADE")
 	redisClient.Client.FlushAll(ctx)
 
@@ -72,7 +70,6 @@ func TestIntegration_FullFlow(t *testing.T) {
 	svc := service.NewService(repository, cfg, redisClient)
 	router := myHttp.NewRouter(&cfg.HTTPServer, svc)
 
-	// Step A: Create Incident
 	incidentName := fmt.Sprintf("Test Incident %d", time.Now().UnixNano())
 	createReq := entity.CreateIncidentRequest{
 		Name:        incidentName,
@@ -96,9 +93,8 @@ func TestIntegration_FullFlow(t *testing.T) {
 	req.Header.Set("X-API-Key", "test-api-key")
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusCreated, w.Code, "Incident creation failed: %s", w.Body.String())
+	require.Equal(t, http.StatusCreated, w.Code, "Не удалось создать инцидент: %s", w.Body.String())
 
-	// Step B: Check Location (Should be Danger)
 	checkReq := entity.CheckLocationRequest{
 		UserID: uuid.NewString(),
 		UserLocation: entity.UserLocation{
@@ -110,31 +106,29 @@ func TestIntegration_FullFlow(t *testing.T) {
 	req = httptest.NewRequest("POST", "/api/v1/location/check", bytes.NewReader(body))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusOK, w.Code, "Location check failed: %s", w.Body.String())
+	require.Equal(t, http.StatusOK, w.Code, "Не удалось проверить локацию: %s", w.Body.String())
 
 	var checkResp entity.CheckLocationResponse
 	err = json.Unmarshal(w.Body.Bytes(), &checkResp)
 	require.NoError(t, err)
-	assert.True(t, checkResp.IsDanger, "User should be in danger zone")
-	assert.NotEmpty(t, checkResp.Incidents, "Matched incidents should not be empty")
+	assert.True(t, checkResp.IsDanger, "Пользователь должен находиться в опасной зоне")
+	assert.NotEmpty(t, checkResp.Incidents, "")
 
-	// Step C: Check Stats
 	time.Sleep(200 * time.Millisecond)
 	req = httptest.NewRequest("GET", "/api/v1/incidents/stats", nil)
 	req.Header.Set("X-API-Key", "test-api-key")
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusOK, w.Code, "Stats check failed: %s", w.Body.String())
+	require.Equal(t, http.StatusOK, w.Code, "Не удалось получить статистику: %s", w.Body.String())
 
 	var statsResp entity.StatsResponse
 	err = json.Unmarshal(w.Body.Bytes(), &statsResp)
 	require.NoError(t, err)
-	assert.NotEmpty(t, statsResp.Stats, "Stats should not be empty")
+	assert.NotEmpty(t, statsResp.Stats, "Статистика не должна быть пустой")
 
-	// Step D: Check Health
 	req = httptest.NewRequest("GET", "/api/v1/system/health", nil)
 	req.Header.Set("X-API-Key", "test-api-key")
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	require.Equal(t, http.StatusOK, w.Code, "Health check failed: %s", w.Body.String())
+	require.Equal(t, http.StatusOK, w.Code, "Не удалось проверить здоровье: %s", w.Body.String())
 }

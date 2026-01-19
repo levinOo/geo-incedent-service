@@ -25,21 +25,22 @@ func NewWorker(queue *queue.Queue, sender *service.WebhookSender, config *config
 }
 
 func (w *Worker) Run(ctx context.Context) {
+	slog.Info("воркер запущен")
+	defer slog.Info("воркер остановлен")
 
 	for {
-		select {
-		case <-ctx.Done():
-			slog.Info("воркер остановлен")
-			return
-		default:
-			task, err := w.queue.Dequeue(ctx)
-			if err != nil {
+		task, err := w.queue.Dequeue(ctx)
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				return
+			default:
 				slog.Error("не удалось получить задачу", "error", err)
 				continue
 			}
-
-			w.processTask(ctx, task)
 		}
+
+		w.processTask(ctx, task)
 	}
 }
 
