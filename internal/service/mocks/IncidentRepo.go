@@ -53,7 +53,7 @@ func (_m *IncidentRepo) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 // FindAll provides a mock function with given fields: ctx, limit, offset
-func (_m *IncidentRepo) FindAll(ctx context.Context, limit string, offset string) ([]entity.Incident, error) {
+func (_m *IncidentRepo) FindAll(ctx context.Context, limit int, offset int) ([]entity.Incident, error) {
 	ret := _m.Called(ctx, limit, offset)
 
 	if len(ret) == 0 {
@@ -62,10 +62,10 @@ func (_m *IncidentRepo) FindAll(ctx context.Context, limit string, offset string
 
 	var r0 []entity.Incident
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) ([]entity.Incident, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int, int) ([]entity.Incident, error)); ok {
 		return rf(ctx, limit, offset)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) []entity.Incident); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int, int) []entity.Incident); ok {
 		r0 = rf(ctx, limit, offset)
 	} else {
 		if ret.Get(0) != nil {
@@ -73,7 +73,7 @@ func (_m *IncidentRepo) FindAll(ctx context.Context, limit string, offset string
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, int, int) error); ok {
 		r1 = rf(ctx, limit, offset)
 	} else {
 		r1 = ret.Error(1)

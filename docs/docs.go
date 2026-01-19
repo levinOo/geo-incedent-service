@@ -15,32 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/health": {
-            "get": {
-                "description": "Метод для проверки здоровья сервиса",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "health"
-                ],
-                "summary": "Проверяет здоровье сервиса",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/entity.HealthResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/entity.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/incidents": {
             "get": {
                 "security": [
@@ -121,19 +95,19 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "successfully created",
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/entity.IncidentResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid request body (name, area required)",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/entity.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Failed to create incident",
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/entity.ErrorResponse"
                         }
@@ -191,8 +165,6 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "format": "uuid",
-                        "example": "550e8400-e29b-41d4-a716-426614174000",
                         "description": "Incident ID",
                         "name": "id",
                         "in": "path",
@@ -226,57 +198,13 @@ const docTemplate = `{
                     }
                 }
             },
-            "delete": {
+            "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Удаляет инцидент",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "incidents"
-                ],
-                "summary": "Удаляет инцидент",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Incident ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "successfully deleted",
-                        "schema": {
-                            "$ref": "#/definitions/entity.IncidentResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/entity.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/entity.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Обновляет инцидент",
+                "description": "Метод для обновления инцидента по уникальному идентификатору (UUID). ID передается в URL как параметр пути. Можно обновить только название, описание и гео-зону (Polygon).",
                 "consumes": [
                     "application/json"
                 ],
@@ -325,11 +253,55 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Метод для деактивации инцидента по уникальному идентификатору (UUID). ID передается в URL как параметр пути.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "incidents"
+                ],
+                "summary": "Деактивирует инцидент",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Incident ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/entity.IncidentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/entity.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/entity.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/location": {
+        "/location/check": {
             "post": {
-                "description": "Проверяет локацию",
+                "description": "Метод проверяет находится ли пользователь в опасной зоне. Принимает координаты пользователя и userID.",
                 "consumes": [
                     "application/json"
                 ],
@@ -362,6 +334,37 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/entity.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/entity.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/system/health": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Метод для проверки здоровья сервиса",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Проверяет здоровье сервиса",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/entity.HealthResponse"
                         }
                     },
                     "500": {
@@ -419,13 +422,13 @@ const docTemplate = `{
                 "description": {
                     "type": "string",
                     "maxLength": 1000,
-                    "example": "Description 1"
+                    "example": "Описание наводнения"
                 },
                 "name": {
                     "type": "string",
                     "maxLength": 255,
                     "minLength": 1,
-                    "example": "Incident 1"
+                    "example": "Наводнение"
                 }
             }
         },
@@ -472,11 +475,11 @@ const docTemplate = `{
                 },
                 "created_at": {
                     "type": "string",
-                    "example": "2022-01-01T00:00:00Z"
+                    "example": "2026-01-18T18:30:00Z"
                 },
                 "description": {
                     "type": "string",
-                    "example": "Description 1"
+                    "example": "Описание наводнения"
                 },
                 "id": {
                     "type": "string",
@@ -488,11 +491,11 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string",
-                    "example": "Incident 1"
+                    "example": "Наводнение"
                 },
                 "updated_at": {
                     "type": "string",
-                    "example": "2022-01-01T00:00:00Z"
+                    "example": "2026-01-18T18:30:00Z"
                 }
             }
         },
@@ -506,7 +509,8 @@ const docTemplate = `{
                     }
                 },
                 "total": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 10
                 }
             }
         },
@@ -535,11 +539,11 @@ const docTemplate = `{
             "properties": {
                 "error": {
                     "type": "string",
-                    "example": "invalid input error: invalid area"
+                    "example": "ошибка ввода: неверная область"
                 },
                 "status": {
                     "type": "string",
-                    "example": "successfully created"
+                    "example": "успешно создано"
                 }
             }
         },
@@ -581,7 +585,8 @@ const docTemplate = `{
                     }
                 },
                 "window_minutes": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 60
                 }
             }
         },
@@ -594,13 +599,13 @@ const docTemplate = `{
                 "description": {
                     "type": "string",
                     "maxLength": 1000,
-                    "example": "Description 1"
+                    "example": "Описание наводнения"
                 },
                 "name": {
                     "type": "string",
                     "maxLength": 255,
                     "minLength": 1,
-                    "example": "Incident 1"
+                    "example": "Наводнение"
                 }
             }
         },

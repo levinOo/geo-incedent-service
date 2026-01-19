@@ -14,39 +14,31 @@ func NewRouter(cfg *config.HTTPServerConfig, service *service.Service) *gin.Engi
 	r := gin.New()
 
 	r.Use(gin.Recovery())
+	r.Use(LoggingMiddleware())
 
 	h := NewHandler(service)
 
 	// Swagger UI
-	r.GET("swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	api := r.Group("/api/v1")
 	{
-		r.Use(LoggingMiddleware())
+		api.GET("/system/health", ApiKeyMiddleware(cfg), h.Health.Check)
 
-		health := api.Group("system")
+		incidents := api.Group("/incidents")
+		incidents.Use(ApiKeyMiddleware(cfg))
 		{
-			health.GET("/health", h.Health.Check)
-		}
-
-		incidents := api.Group("incidents")
-		{
-			r.Use(ApiKeyMiddleware(cfg))
-
+			incidents.GET("/stats", h.Incident.GetStats)
 			incidents.POST("", h.Incident.CreateIncident)
 			incidents.GET("", h.Incident.GetIncidents)
 			incidents.GET("/:id", h.Incident.GetIncident)
-			incidents.PATCH("/:id", h.Incident.UpdateIncident)
+			incidents.PUT("/:id", h.Incident.UpdateIncident)
 			incidents.DELETE("/:id", h.Incident.DeleteIncident)
-
-			stats := api.Group("stats")
-			{
-				stats.GET("", h.Incident.GetStats)
-			}
 		}
 
-		location := api.Group("location")
+		location := api.Group("/location")
 		{
-			location.POST("", h.Location.CheckLocation)
+			location.POST("/check", h.Location.CheckLocation)
 		}
 	}
 

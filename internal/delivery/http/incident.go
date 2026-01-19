@@ -2,6 +2,7 @@ package myHttp
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/levinOo/geo-incedent-service/internal/entity"
@@ -103,7 +104,17 @@ func (h *IncidentHandlerImpl) GetIncidents(c *gin.Context) {
 	limit := c.Query("limit")
 	offset := c.Query("offset")
 
-	resp, err := h.service.Incident.FindAll(c, limit, offset)
+	limitInt, err := strconv.Atoi(limit)
+	if err != nil || limitInt < 0 {
+		limitInt = 10
+	}
+
+	offsetInt, err := strconv.Atoi(offset)
+	if err != nil || offsetInt < 0 {
+		offsetInt = 0
+	}
+
+	resp, err := h.service.Incident.FindAll(c, limitInt, offsetInt)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, entity.ErrorResponse{
 			Error:   "Не удалось получить список инцидентов",
@@ -127,7 +138,7 @@ func (h *IncidentHandlerImpl) GetIncidents(c *gin.Context) {
 // @Success 200 {object} entity.IncidentResponse
 // @Failure 400 {object} entity.ErrorResponse
 // @Failure 500 {object} entity.ErrorResponse
-// @Router /incidents/{id} [patch]
+// @Router /incidents/{id} [put]
 func (h *IncidentHandlerImpl) UpdateIncident(c *gin.Context) {
 	id := c.Param("id")
 	var req entity.UpdateIncidentRequest

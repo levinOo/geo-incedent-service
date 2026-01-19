@@ -10,6 +10,7 @@ WORKDIR /root/
 #RUN apk --no-cache
 
 COPY --from=builder /app/app .
+COPY --from=builder /app/config ./config
 
 #EXPOSE 8080
 

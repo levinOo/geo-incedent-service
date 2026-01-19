@@ -67,12 +67,12 @@ func Run() error {
 
 	webhookSender := service.NewWebhookSender(cfg)
 	q := queue.NewQueue(redisClient.Client)
-	bgWorker := worker.NewWorker(q, webhookSender)
+	bgWorker := worker.NewWorker(q, webhookSender, cfg)
 
 	// Воркер
 	go func() {
 		slog.Info("воркер запущен")
-		bgWorker.Run(ctx, cfg.HTTPServer.WebhookURL)
+		bgWorker.Run(ctx)
 	}()
 
 	router := myHttp.NewRouter(&cfg.HTTPServer, svc)

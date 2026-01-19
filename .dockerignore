@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+
+# Environments
+.env
+.env.*
+
+# Dependencies
+vendor/
+
+# Binaries
+app
+bin/
+*.exe
+*.so
+*.dylib
+
+# Logs
+*.log
+
+# Tests
+tests/
+*_test.go
+
+# Docker
+DockerFile
+docker-compose.yml
+.dockerignore
+
+# IDE
+.idea/
+.vscode/
+.DS_Store

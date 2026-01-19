@@ -61,7 +61,7 @@ func TestIncidentService_Create(t *testing.T) {
 					Description: "Big fire",
 					Area: entity.GeoJsonPolygon{
 						Type:        "Polygon",
-						Coordinates: [][][]float64{{{0, 0}, {0, 10}}}, // Unclosed
+						Coordinates: [][][]float64{{{0, 0}, {0, 10}}},
 					},
 				},
 			},

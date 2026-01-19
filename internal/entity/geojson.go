@@ -30,20 +30,15 @@ func (g *GeoJsonPolygon) Scan(value interface{}) error {
 	}
 }
 
-// Contains checks if a point is inside the polygon using ray casting algorithm.
-// Takes lat, lon. GeoJSON coordinates are [lon, lat].
 func (g *GeoJsonPolygon) Contains(lat, lon float64) bool {
 	if len(g.Coordinates) == 0 {
 		return false
 	}
 
-	// Check outer ring only for simplicity (index 0)
-	// TODO: Handle holes (inner rings) if needed
 	polygon := g.Coordinates[0]
 	inside := false
 
-	for i, j := 0, len(polygon)-1; i < len(polygon); j, i = i+1, i+1 {
-		// Polygon[i] = [lon, lat]
+	for i, j := 0, len(polygon)-1; i < len(polygon); j, i = i, i+1 {
 		xi, yi := polygon[i][0], polygon[i][1]
 		xj, yj := polygon[j][0], polygon[j][1]
 

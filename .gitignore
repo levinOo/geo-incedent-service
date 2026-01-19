@@ -1,1 +1,30 @@
+# Binaries
+bin/
+app
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Environments
 .env
+.env.*
+!.env-example
+
+# Dependencies
+vendor/
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+
+# Coverage
+coverage.out
+coverage.html

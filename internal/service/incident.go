@@ -15,7 +15,7 @@ import (
 type IncidentService interface {
 	Create(ctx context.Context, req *entity.CreateIncidentRequest) (*entity.IncidentResponse, error)
 	FindByID(ctx context.Context, id string) (*entity.GetIncidentResponse, error)
-	FindAll(ctx context.Context, limit, offset string) ([]*entity.GetIncidentResponse, error)
+	FindAll(ctx context.Context, limit, offset int) ([]*entity.GetIncidentResponse, error)
 	Update(ctx context.Context, req *entity.UpdateIncidentRequest, id string) (*entity.IncidentResponse, error)
 	Delete(ctx context.Context, id string) (*entity.IncidentResponse, error)
 	GetStats(ctx context.Context) (*entity.StatsResponse, error)
@@ -40,6 +40,7 @@ func (s *IncidentServiceImpl) Create(ctx context.Context, req *entity.CreateInci
 		Name:        req.Name,
 		Description: req.Description,
 		Area:        req.Area,
+		IsActive:    true,
 	}
 
 	err := s.repo.Create(ctx, incident)
@@ -77,7 +78,7 @@ func (s *IncidentServiceImpl) FindByID(ctx context.Context, id string) (*entity.
 	}, nil
 }
 
-func (s *IncidentServiceImpl) FindAll(ctx context.Context, limit, offset string) ([]*entity.GetIncidentResponse, error) {
+func (s *IncidentServiceImpl) FindAll(ctx context.Context, limit, offset int) ([]*entity.GetIncidentResponse, error) {
 	incidents, err := s.repo.FindAll(ctx, limit, offset)
 	if err != nil {
 		slog.Error("не удалось найти инциденты", "error", err.Error())

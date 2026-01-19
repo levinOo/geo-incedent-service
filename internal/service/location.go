@@ -15,6 +15,10 @@ import (
 	"github.com/levinOo/geo-incedent-service/pkg/validator"
 )
 
+const (
+	cacheKey = "incidents:active"
+)
+
 type LocationService interface {
 	CheckLocation(ctx context.Context, req *entity.CheckLocationRequest) (*entity.CheckLocationResponse, error)
 }
@@ -41,7 +45,6 @@ func (s *LocationServiceImpl) CheckLocation(ctx context.Context, req *entity.Che
 		return nil, fmt.Errorf("ошибка валидации локации: %w", err)
 	}
 
-	const cacheKey = "incidents:active"
 	var incidents []entity.Incident
 
 	cachedData, err := s.redis.Client.Get(ctx, cacheKey).Bytes()
@@ -52,7 +55,7 @@ func (s *LocationServiceImpl) CheckLocation(ctx context.Context, req *entity.Che
 	}
 
 	if len(incidents) == 0 {
-		incidents, err = s.incidentRepo.FindAll(ctx, "1000", "0")
+		incidents, err = s.incidentRepo.FindAll(ctx, 1000, 0)
 		if err != nil {
 			slog.Error("не удалось получить активные инциденты", "error", err)
 			return nil, fmt.Errorf("ошибка получения активных инцидентов: %w", err)
@@ -64,8 +67,11 @@ func (s *LocationServiceImpl) CheckLocation(ctx context.Context, req *entity.Che
 	}
 
 	var matchedIncidents []*entity.LocationCheckIncident
+	slog.Debug("Проверка инцидентов", "count", len(incidents))
 	for _, inc := range incidents {
+		slog.Debug("Проверка инцидента", "name", inc.Name, "area", inc.Area)
 		if inc.Area.Contains(req.UserLocation.Lat, req.UserLocation.Lon) {
+			slog.Info("Инцидент найден", "name", inc.Name)
 			matchedIncidents = append(matchedIncidents, &entity.LocationCheckIncident{
 				ID:          inc.ID,
 				Name:        inc.Name,

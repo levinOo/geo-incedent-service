@@ -16,7 +16,7 @@ import (
 type IncidentRepo interface {
 	Create(ctx context.Context, i *entity.Incident) error
 	FindByID(ctx context.Context, id uuid.UUID) (*entity.Incident, error)
-	FindAll(ctx context.Context, limit, offset string) ([]entity.Incident, error)
+	FindAll(ctx context.Context, limit, offset int) ([]entity.Incident, error)
 	Update(ctx context.Context, i *entity.Incident) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	GetStats(ctx context.Context, minutes int) ([]*entity.IncidentStats, error)
@@ -93,7 +93,7 @@ func (r *IncidentRepoImpl) FindByID(ctx context.Context, id uuid.UUID) (*entity.
 	return &i, nil
 }
 
-func (r *IncidentRepoImpl) FindAll(ctx context.Context, limit, offset string) ([]entity.Incident, error) {
+func (r *IncidentRepoImpl) FindAll(ctx context.Context, limit, offset int) ([]entity.Incident, error) {
 	query := `
 		SELECT 
 			id,
@@ -104,7 +104,6 @@ func (r *IncidentRepoImpl) FindAll(ctx context.Context, limit, offset string) ([
 			created_at,
 			updated_at
 		FROM incidents
-		WHERE is_active = true
 		ORDER BY created_at DESC 
 		LIMIT $1 OFFSET $2
 	`

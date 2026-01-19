@@ -26,11 +26,11 @@ definitions:
       area:
         $ref: '#/definitions/entity.GeoJsonPolygon'
       description:
-        example: Description 1
+        example: Описание наводнения
         maxLength: 1000
         type: string
       name:
-        example: Incident 1
+        example: Наводнение
         maxLength: 255
         minLength: 1
         type: string
@@ -67,10 +67,10 @@ definitions:
       area:
         $ref: '#/definitions/entity.GeoJsonPolygon'
       created_at:
-        example: "2022-01-01T00:00:00Z"
+        example: "2026-01-18T18:30:00Z"
         type: string
       description:
-        example: Description 1
+        example: Описание наводнения
         type: string
       id:
         example: 123e4567-e89b-12d3-a456-426614174000
@@ -79,10 +79,10 @@ definitions:
         example: true
         type: boolean
       name:
-        example: Incident 1
+        example: Наводнение
         type: string
       updated_at:
-        example: "2022-01-01T00:00:00Z"
+        example: "2026-01-18T18:30:00Z"
         type: string
     type: object
   entity.GetIncidentsResponse:
@@ -92,6 +92,7 @@ definitions:
           $ref: '#/definitions/entity.GetIncidentResponse'
         type: array
       total:
+        example: 10
         type: integer
     type: object
   entity.HealthResponse:
@@ -110,10 +111,10 @@ definitions:
   entity.IncidentResponse:
     properties:
       error:
-        example: 'invalid input error: invalid area'
+        example: 'ошибка ввода: неверная область'
         type: string
       status:
-        example: successfully created
+        example: успешно создано
         type: string
     type: object
   entity.IncidentStats:
@@ -141,6 +142,7 @@ definitions:
           $ref: '#/definitions/entity.IncidentStats'
         type: array
       window_minutes:
+        example: 60
         type: integer
     type: object
   entity.UpdateIncidentRequest:
@@ -148,11 +150,11 @@ definitions:
       area:
         $ref: '#/definitions/entity.GeoJsonPolygon'
       description:
-        example: Description 1
+        example: Описание наводнения
         maxLength: 1000
         type: string
       name:
-        example: Incident 1
+        example: Наводнение
         maxLength: 255
         minLength: 1
         type: string
@@ -170,23 +172,6 @@ info:
   title: Geo Incedent Service API
   version: "1.0"
 paths:
-  /health:
-    get:
-      description: Метод для проверки здоровья сервиса
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/entity.HealthResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/entity.ErrorResponse'
-      summary: Проверяет здоровье сервиса
-      tags:
-      - health
   /incidents:
     get:
       description: Метод для получения пагенированного списка инцидентов. Поддерживает
@@ -236,36 +221,7 @@ paths:
       - application/json
       responses:
         "201":
-          description: successfully created
-          schema:
-            $ref: '#/definitions/entity.IncidentResponse'
-        "400":
-          description: Invalid request body (name, area required)
-          schema:
-            $ref: '#/definitions/entity.ErrorResponse'
-        "500":
-          description: Failed to create incident
-          schema:
-            $ref: '#/definitions/entity.ErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Создает новый инцидент
-      tags:
-      - incidents
-  /incidents/{id}:
-    delete:
-      description: Удаляет инцидент
-      parameters:
-      - description: Incident ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: successfully deleted
+          description: Created
           schema:
             $ref: '#/definitions/entity.IncidentResponse'
         "400":
@@ -278,7 +234,37 @@ paths:
             $ref: '#/definitions/entity.ErrorResponse'
       security:
       - ApiKeyAuth: []
-      summary: Удаляет инцидент
+      summary: Создает новый инцидент
+      tags:
+      - incidents
+  /incidents/{id}:
+    delete:
+      description: Метод для деактивации инцидента по уникальному идентификатору (UUID).
+        ID передается в URL как параметр пути.
+      parameters:
+      - description: Incident ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.IncidentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Деактивирует инцидент
       tags:
       - incidents
     get:
@@ -286,8 +272,6 @@ paths:
         ID передается в URL как параметр пути.
       parameters:
       - description: Incident ID
-        example: 550e8400-e29b-41d4-a716-426614174000
-        format: uuid
         in: path
         name: id
         required: true
@@ -316,10 +300,12 @@ paths:
       summary: Получает инцидент по ID
       tags:
       - incidents
-    patch:
+    put:
       consumes:
       - application/json
-      description: Обновляет инцидент
+      description: Метод для обновления инцидента по уникальному идентификатору (UUID).
+        ID передается в URL как параметр пути. Можно обновить только название, описание
+        и гео-зону (Polygon).
       parameters:
       - description: Incident ID
         in: path
@@ -373,11 +359,12 @@ paths:
       summary: Получает статистику инцидентов
       tags:
       - incidents
-  /location:
+  /location/check:
     post:
       consumes:
       - application/json
-      description: Проверяет локацию
+      description: Метод проверяет находится ли пользователь в опасной зоне. Принимает
+        координаты пользователя и userID.
       parameters:
       - description: User data
         in: body
@@ -403,6 +390,25 @@ paths:
       summary: Проверяет локацию
       tags:
       - location
+  /system/health:
+    get:
+      description: Метод для проверки здоровья сервиса
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.HealthResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Проверяет здоровье сервиса
+      tags:
+      - health
 securityDefinitions:
   ApiKeyAuth:
     in: header

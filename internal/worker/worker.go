@@ -24,7 +24,7 @@ func NewWorker(queue *queue.Queue, sender *service.WebhookSender, config *config
 	}
 }
 
-func (w *Worker) Run(ctx context.Context, webhookURL string) {
+func (w *Worker) Run(ctx context.Context) {
 
 	for {
 		select {

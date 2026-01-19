@@ -27,7 +27,8 @@ func NewHealthHandler(service *service.Service) HealthHandler {
 // @Produce json
 // @Success 200 {object} entity.HealthResponse
 // @Failure 500 {object} entity.ErrorResponse
-// @Router /health [get]
+// @Security ApiKeyAuth
+// @Router /system/health [get]
 func (h *HealthHandlerImpl) Check(c *gin.Context) {
 	resp, err := h.service.Health.Check(c)
 	if err != nil {

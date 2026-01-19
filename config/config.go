@@ -70,24 +70,23 @@ func Load() (*Config, error) {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			slog.Warn("config file not found, using environment variables only")
+			slog.Warn("конфиг файл не найден, использую только переменные окружения")
 		} else {
 			return nil, fmt.Errorf("failed to read config: %w", err)
 		}
 	}
 
-	// заменить кастом функ
 	required := []string{"DATABASE_URL", "API_KEY", "WEBHOOK_URL"}
 
 	for _, key := range required {
 		if viper.GetString(key) == "" {
-			return nil, fmt.Errorf("required env variable %s is not set", key)
+			return nil, fmt.Errorf("неустановлено обязательное окружение %s", key)
 		}
 	}
 
 	cfg := &Config{
 		HTTPServer: HTTPServerConfig{
-			HTTPServerPort:         viper.GetString("HTTP_SERVER_PORT"),
+			HTTPServerPort:         mustLoad("HTTP_SERVER_PORT"),
 			HTTPServerReadTimeout:  viper.GetDuration("HTTP_SERVER_READ_TIMEOUT"),
 			HTTPServerWriteTimeout: viper.GetDuration("HTTP_SERVER_WRITE_TIMEOUT"),
 			HTTPServerIdleTimeout:  viper.GetDuration("HTTP_SERVER_IDLE_TIMEOUT"),
@@ -115,7 +114,7 @@ func Load() (*Config, error) {
 			RedisMaxRetries:   viper.GetInt("REDIS_MAX_RETRIES"),
 		},
 		Worker: Worker{
-			WebhookURL: viper.GetString("WEBHOOK_URL"),
+			WebhookURL: mustLoad("WEBHOOK_URL"),
 			MaxRetries: viper.GetInt("WORKER_MAX_RETRIES"),
 		},
 		RetryClient: RetryClient{
@@ -132,7 +131,7 @@ func Load() (*Config, error) {
 func mustLoad(name string) string {
 	value := viper.GetString(name)
 	if value == "" {
-		slog.Error("required env variable is not set", "error", fmt.Errorf("required env variable %s is not set", name))
+		slog.Error("неустановлено обязательное окружение", "error", fmt.Errorf("неустановлено обязательное окружение %s", name))
 		os.Exit(1)
 	}
 	return value
